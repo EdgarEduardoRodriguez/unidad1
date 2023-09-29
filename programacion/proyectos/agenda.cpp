@@ -72,7 +72,7 @@ int main() {
                     std::cout << "Fecha no válida. Ingrese otra fecha" << std::endl;
                     continue;
                 }
-                
+
                 agenda.push_back(evento);// lo agrega al vector
                 break;
             case 2: // Mostrar eventos
@@ -107,7 +107,10 @@ int main() {
                             int añosRestantes = diasRestantes / 365;
                             int mesesRestantes = (diasRestantes % 365) / 30;
                             int diasRestantesFinales = (diasRestantes % 365) % 30;
-                            
+
+
+
+
                             if (añosRestantes > 0) {
                                 std::cout << añosRestantes << " años(s) ";
                             }
@@ -116,6 +119,8 @@ int main() {
                             }
                             if (diasRestantesFinales > 0){
                                 std::cout << diasRestantesFinales << " día(s)";
+                            }else if(diasRestantes == 0){
+                                std::cout << "El evento es hoy ";
                             }
                             std::cout << std::endl;
 
