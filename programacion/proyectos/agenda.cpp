@@ -13,12 +13,12 @@ struct evento {
 int obtenerEnteroValido() {//para que el usuario no ingrese letras
     int numero;
     while (!(std::cin >> numero)) {
-        std::cin.clear();
+        std::cin.clear();// esta para borrar caulquier tipo de error
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cout << "Carácter no válido. Ingrese un número." << std::endl;
     }
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Limpiar el buffer de entrada
-    return numero;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // esta linea sirve para limpiar el buffer de entrada para que no queden carateres no deseados
+    return numero;//devuelve el numero ENTERO deseado
 }
 
 // Función para validar si una fecha es válida
@@ -44,6 +44,65 @@ bool esFechaValida(int dia, int mes, int año) {
 bool esHoraValida(int hora, int minuto) {
     return (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60);
 }
+// Función para calcular la hora de diferencia
+void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro para que no se haga una copia inecesaria de datos
+    time_t ahora = time(0);
+    tm eventoTime = {};
+    eventoTime.tm_year = ev.año - 1900;
+    eventoTime.tm_mon = ev.mes - 1;
+    eventoTime.tm_mday = ev.dia;
+    eventoTime.tm_hour = ev.hora;
+    eventoTime.tm_min = ev.minuto;
+    eventoTime.tm_sec = 0;
+
+    time_t eventoTiempo = mktime(&eventoTime);
+    double segundosRestantes = difftime(eventoTiempo, ahora);
+
+    if (segundosRestantes < 0) {
+        std::cout << "El evento \"" << ev.nombres << "\" ya ha pasado" << std::endl;
+    } else {
+        const int segundosEnMinuto = 60;
+        const int segundosEnHora = 3600;
+        const int segundosEnDia = 86400;
+        const int segundosEnMes = 2592000; 
+        const int segundosEnAño = 31536000;
+
+        int añosRestantes = static_cast<int>(segundosRestantes / segundosEnAño); // Divide segundos en años
+        segundosRestantes -= añosRestantes * segundosEnAño;
+
+        int mesesRestantes = static_cast<int>(segundosRestantes / segundosEnMes); // Divide segundos en meses
+        segundosRestantes -= mesesRestantes * segundosEnMes;
+
+        int diasRestantes = static_cast<int>(segundosRestantes / segundosEnDia); // Divide segundos en días
+        segundosRestantes -= diasRestantes * segundosEnDia;
+
+        int horasRestantes = static_cast<int>(segundosRestantes / segundosEnHora); // Divide segundos en horas
+        segundosRestantes -= horasRestantes * segundosEnHora;
+
+        int minutosRestantes = static_cast<int>(segundosRestantes / segundosEnMinuto); // Convierte segundos en minutos
+
+        std::cout << "Tiempo restante para el evento \"" << ev.nombres << "\":" << std::endl;
+        if (añosRestantes > 0) {
+            std::cout << añosRestantes << " año(s) ";
+        }
+        if (mesesRestantes > 0) {
+            std::cout << mesesRestantes << " mes(es) ";
+        }
+        if (diasRestantes > 0) {
+            std::cout << diasRestantes << " día(s) ";
+        }
+        if (horasRestantes > 0) {
+            std::cout << horasRestantes << " hora(s) ";
+        }
+        if (minutosRestantes > 0) {
+            std::cout << minutosRestantes << " minuto(s) ";
+        }
+        if (añosRestantes == 0 && mesesRestantes == 0 && diasRestantes == 0 && horasRestantes == 0 && minutosRestantes == 0) {
+            std::cout << "El evento es ahora";
+        }
+        std::cout << std::endl;
+    }
+}
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
@@ -53,7 +112,9 @@ int main() {
         std::cout << "1. Agregar un evento" << std::endl;
         std::cout << "2. Mostrar todos los eventos" << std::endl;
         std::cout << "3. Mostrar tiempo para el evento" << std::endl;
-        std::cout << "4. Salir" << std::endl;
+        std::cout << "4. Eliminar un evento" << std::endl; // Opción para eliminar eventos
+        std::cout << "5. Editar un evento" << std::endl;   // Opción para editar eventos
+        std::cout << "6. Salir" << std::endl;
         std::cout << "Seleccione una opción: ";
 
         int opc = obtenerEnteroValido();
@@ -63,20 +124,20 @@ int main() {
         switch (opc) {
             case 1: // Agregar eventos
                 std::cout << "Ingrese el nombre del evento: ";
+                    std::cout << "Ingrese el nombre del evento: ";
                 std::getline(std::cin, evento.nombres);
-
                 while (true) {
                     std::cout << "Ingrese la fecha del evento (días/meses/años): ";
                     char separador; // Variable para almacenar el carácter separador ("/")
-                    if (!(std::cin >> evento.dia >> separador >> evento.mes >> separador >> evento.año) || separador != '/') {// Esta linea es para que el usuario ingrese bien la fecha por ejemplo 12/12/2023 si ingresa otra fecha lo regresa a ingresar otra vez
+                    if (!(std::cin >> evento.dia >> separador >> evento.mes >> separador >> evento.año) || separador != '/') {
                         std::cout << "Formato de fecha no válido. Use el formato días/meses/años (por ejemplo, 12/9/23)." << std::endl;
-                        std::cin.clear();//limpia para volver ingresar la fecha 
-                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');// Llama a la libreria limits para eliminar cualquier entrada incorrecta
-                        continue; // Volver a solicitar la fecha
+                        std::cin.clear();
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        continue;
                     }
 
-                    if (esFechaValida(evento.dia, evento.mes, evento.año)) {// Llama a la funcion para que el uisuario no ingrese una fecha incorrecta 
-                        break; // La fecha es válida, salimos del bucle
+                    if (esFechaValida(evento.dia, evento.mes, evento.año)) {
+                        break;
                     } else {
                         std::cout << "Fecha no válida. Ingrese otra fecha." << std::endl;
                     }
@@ -84,12 +145,12 @@ int main() {
 
                 while (true) {
                     std::cout << "Ingrese la hora del evento (0-23): ";
-                    evento.hora = obtenerEnteroValido();// llama a la funcion obtenerEnteroValido para que no ingrese una letra 
+                    evento.hora = obtenerEnteroValido();
                     std::cout << "Ingrese los minutos del evento (0-59): ";
                     evento.minuto = obtenerEnteroValido();
 
-                    if (esHoraValida(evento.hora, evento.minuto)) {//llama a la funcion para que el usuario no ingrese una fecah incorrecta 
-                        break; // La hora es válida, salimos del bucle
+                    if (esHoraValida(evento.hora, evento.minuto)) {
+                        break;
                     } else {
                         std::cout << "Hora no válida. Ingrese otra hora." << std::endl;
                     }
@@ -98,10 +159,10 @@ int main() {
                 agenda.push_back(evento); // Lo agrega al vector
                 break;
             case 2: // Mostrar eventos
-                if (!agenda.empty()) { // Verificar si hay eventos en la agenda
+                if (!agenda.empty()) {
                     std::cout << "Lista de Eventos:" << std::endl;
-                    for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
-                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
+                    for (int i = 0; i < agenda.size(); i++) {
+                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año
                                   << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto << std::endl;
                     }
                 } else {
@@ -109,76 +170,84 @@ int main() {
                 }
                 break;
             case 3: // Calcular tiempo para el evento
-                if (!agenda.empty()) { // Verificar si hay eventos en la agenda
+                if (!agenda.empty()) {
                     std::cout << "Ingrese el número de evento: ";
-                    int numEvento = obtenerEnteroValido(); // Variable que se utilizará para leer el número del evento que el usuario quiere consultar y llama a la funcion para que no ingrese una tecla incorrecta 
+                    int numEvento = obtenerEnteroValido();
 
-                    if (numEvento >= 1 && numEvento <= agenda.size()) { // Verificar si el número del evento es válido y si el tamaño de la agenda es válido
-                        time_t ahora = time(0); // Obtiene la hora actual del sistema y la guarda en la variable ahora
-                        tm eventoTime = {}; // Se declara una estructura que sirve para representar la fecha y la hora del evento
-                        eventoTime.tm_year = agenda[numEvento - 1].año - 1900; // Se le resta al 1900 al año por la estructura "tm" si ingresa 2023 se le resta 1900 y queda 123 y así lo lee
-                        eventoTime.tm_mon = agenda[numEvento - 1].mes - 1;
-                        eventoTime.tm_mday = agenda[numEvento - 1].dia;
-                        eventoTime.tm_hour = agenda[numEvento - 1].hora;
-                        eventoTime.tm_min = agenda[numEvento - 1].minuto;
-                        eventoTime.tm_sec = 0; // Segundos en cero
-
-                        time_t eventoTiempo = mktime(&eventoTime); // La estructura eventoTime se convierte en un valor de tiempo (time_t) que representa la fecha y hora del evento seleccionado
-                        double segundosRestantes = difftime(eventoTiempo, ahora); // Esto calcula la diferencia de segundos entre el tiempo del evento "eventoTiempo" y el tiempo actual "ahora" que dice cuántos segundos faltan para que ocurra el evento con el difftime
-
-                        if (segundosRestantes < 0) { // Verifica si los segundos son menores a cero
-                            std::cout << "El evento \"" << agenda[numEvento - 1].nombres << "\" ya ha pasado" << std::endl; // Si los segundos están por debajo de 0, muestra este mensaje
-                        } else {
-                            //variables con los segundos de un minuto, hora,dias,meses,años
-                            const int segundosEnMinuto = 60;
-                            const int segundosEnHora = 3600;
-                            const int segundosEnDia = 86400;
-                            const int segundosEnMes = 2592000; // Asumiendo un mes promedio de 30.44 días
-                            const int segundosEnAño = 31536000; // Asumiendo un año promedio de 365.25 días
-
-                            int añosRestantes = static_cast<int>(segundosRestantes / segundosEnAño); //la operacion aqui declaramos un entero añosRestantes que es igual a segundosRestantes que esta variable esta en double y que almacena la fecha ingresada en segundos 
-                            segundosRestantes -= añosRestantes * segundosEnAño;                      //se divide en segundos en años que lo declaramos luego años restantes es igual menos segundos restantes multiplicado por segundos en años y lo mismo en las demas lineas
-
-                            int mesesRestantes = static_cast<int>(segundosRestantes / segundosEnMes);
-                            segundosRestantes -= mesesRestantes * segundosEnMes;
-
-                            int diasRestantes = static_cast<int>(segundosRestantes / segundosEnDia);
-                            segundosRestantes -= diasRestantes * segundosEnDia;
-
-                            int horasRestantes = static_cast<int>(segundosRestantes / segundosEnHora);
-                            segundosRestantes -= horasRestantes * segundosEnHora;
-
-                            int minutosRestantes = static_cast<int>(segundosRestantes / segundosEnMinuto);// esta solamente convierte segundos en minutos 
-
-                            std::cout << "Tiempo restante para el evento \"" << agenda[numEvento - 1].nombres << "\":" << std::endl;
-                            if (añosRestantes > 0) { //agara la variable ya convertidas en años y la muestra junto con las demas lineas de este if 
-                                std::cout << añosRestantes << " año(s) ";
-                            }
-                            if (mesesRestantes > 0) {
-                                std::cout << mesesRestantes << " mes(es) ";
-                            }
-                            if (diasRestantes > 0) {
-                                std::cout << diasRestantes << " día(s) ";
-                            }
-                            if (horasRestantes > 0) {
-                                std::cout << horasRestantes << " hora(s) ";
-                            }
-                            if (minutosRestantes > 0) {
-                                std::cout << minutosRestantes << " minuto(s) ";
-                            }
-                            if (añosRestantes == 0 && mesesRestantes == 0 && diasRestantes == 0 && horasRestantes == 0 && minutosRestantes == 0) {
-                                std::cout << "El evento es ahora";
-                            }
-                            std::cout << std::endl;
-                        }
-                    } else { // Si selecciona un evento que no es válido, muestra este mensaje
+                    if (numEvento >= 1 && numEvento <= agenda.size()) {
+                        calcularTiempo(agenda[numEvento - 1]);// llama a la funcion donde esta para calcular la hora le damos en valor a parametro  a agenda[numEvento -1]
+                        
+                    } else {
                         std::cout << "Número de evento no válido" << std::endl;
                     }
                 } else {
                     std::cout << "No hay eventos para mostrar" << std::endl;
                 }
                 break;
-            case 4: // Salir del programa
+            case 4: // Eliminar evento
+                if (!agenda.empty()) {
+                    std::cout << "Ingrese el número de evento que desea eliminar: ";
+                    int numEvento = obtenerEnteroValido();
+
+                    if (numEvento >= 1 && numEvento <= agenda.size()) {
+                        // Elimina el evento seleccionado del vector
+                        agenda.erase(agenda.begin() + numEvento - 1);
+                        std::cout << "Evento eliminado con éxito" << std::endl;
+                    } else {
+                        std::cout << "Número de evento no válido" << std::endl;
+                    }
+                } else {
+                    std::cout << "No hay eventos para eliminar" << std::endl;
+                }
+                break;
+            case 5: // Editar evento
+                if (!agenda.empty()) {
+                    std::cout << "Ingrese el número de evento que desea editar: ";
+                    int numEvento = obtenerEnteroValido();
+
+                    if (numEvento >= 1 && numEvento <= agenda.size()) {
+                        std::cout << "Ingrese el nuevo nombre del evento: ";
+                        std::getline(std::cin, agenda[numEvento - 1].nombres);
+
+                        while (true) {
+                            std::cout << "Ingrese la nueva fecha del evento (días/meses/años): ";
+                            char separador;
+                            if (!(std::cin >> agenda[numEvento - 1].dia >> separador >> agenda[numEvento - 1].mes >> separador >> agenda[numEvento - 1].año) || separador != '/') {
+                                std::cout << "Formato de fecha no válido. Use el formato días/meses/años (por ejemplo, 12/9/23)." << std::endl;
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                                continue;
+                            }
+
+                            if (esFechaValida(agenda[numEvento - 1].dia, agenda[numEvento - 1].mes, agenda[numEvento - 1].año)) {
+                                break;
+                            } else {
+                                std::cout << "Fecha no válida. Ingrese otra fecha." << std::endl;
+                            }
+                        }
+
+                        while (true) {
+                            std::cout << "Ingrese la nueva hora del evento (0-23): ";
+                            agenda[numEvento - 1].hora = obtenerEnteroValido();
+                            std::cout << "Ingrese los nuevos minutos del evento (0-59): ";
+                            agenda[numEvento - 1].minuto = obtenerEnteroValido();
+
+                            if (esHoraValida(agenda[numEvento - 1].hora, agenda[numEvento - 1].minuto)) {
+                                break;
+                            } else {
+                                std::cout << "Hora no válida. Ingrese otra hora." << std::endl;
+                            }
+                        }
+
+                        std::cout << "Evento editado con éxito" << std::endl;
+                    } else {
+                        std::cout << "Número de evento no válido" << std::endl;
+                    }
+                } else {
+                    std::cout << "No hay eventos para editar" << std::endl;
+                }
+                break;
+            case 6: // Salir del programa
                 std::cout << "Saliendo del programa" << std::endl;
                 return 0;
             default:
