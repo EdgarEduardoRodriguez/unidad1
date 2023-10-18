@@ -74,6 +74,23 @@ void obtenerHoraValida(int& hora, int& minuto) {//funcion para preguntar la hora
     }
 }
 
+void obtenerHoraValidaFinal(int& hora, int& minuto) {//funcion para preguntar la hora y verificar si esta bien
+    while (true) {
+        std::string horaStr;
+        std::cout << "Ingrese la hora en que finaliza la cita (HH:MM): ";
+        std::cin >> horaStr;
+
+        if (horaStr.size() == 5 && horaStr[2] == ':' && std::isdigit(horaStr[0]) && std::isdigit(horaStr[1]) && std::isdigit(horaStr[3]) && std::isdigit(horaStr[4])) {
+            hora = std::stoi(horaStr.substr(0, 2));
+            minuto = std::stoi(horaStr.substr(3, 2));
+            if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
+                break;
+            }
+        }
+        std::cout << "Formato de hora no válido. Use el formato HH:MM (por ejemplo, 13:30)." << std::endl;
+    }
+}
+
 bool eventoSeSuperpone(const evento& nuevo, const std::vector<evento>& agenda) {
     for (const evento& existente : agenda) {
         if (nuevo.seSuperponeCon(existente)) {
@@ -144,7 +161,7 @@ void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro 
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
-
+    bool eventoInterfiere = false;
     while (true) {
         std::cout << "MENU DE OPCIONES" << std::endl;
         std::cout << "1. Agregar un evento" << std::endl;
@@ -165,38 +182,41 @@ int main() {
                 std::getline(std::cin, evento.nombres);
                 std::cout << "Ingrese el nombre del doctor: ";
                 std::getline(std::cin, evento.doctores);
-                std::cout << "Seleccione el consultorio (1-10): ";
-                evento.consultorio = obtenerEnteroValido();
 
-                obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                obtenerHoraValida(evento.hora, evento.minuto);
-                obtenerHoraValida(evento.horaFin, evento.minutoFin);
 
-                if (eventoSeSuperpone(evento, agenda)){
-                    std::cout << "Este evento interfiere con otro evento" << std::endl;
-                    char opcionCambio;
-                    while (true) {
-                        std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
-                        std::cin >> opcionCambio;
-                        if (opcionCambio == '1' || opcionCambio == '2') {
+                do{    
+                    std::cout << "Seleccione el consultorio (1-10): ";
+                    evento.consultorio = obtenerEnteroValido();
+
+                    obtenerFechaValida(evento.dia, evento.mes, evento.año);
+                    obtenerHoraValida(evento.hora, evento.minuto);
+                    obtenerHoraValidaFinal(evento.horaFin, evento.minutoFin);
+
+                    if (eventoSeSuperpone(evento, agenda)){
+                        std::cout << "Este evento interfiere con otro evento" << std::endl;
+                        char opcionCambio;
+                        while (true) {
+                            std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
+                            std::cin >> opcionCambio;
                             if (opcionCambio == '1') {
                                 obtenerFechaValida(evento.dia, evento.mes, evento.año);
                                 obtenerHoraValida(evento.hora, evento.minuto);
-                                obtenerHoraValida(evento.horaFin, evento.minutoFin);
+                                obtenerHoraValidaFinal(evento.horaFin, evento.minutoFin);
                             } else if (opcionCambio == '2') {
                                 std::cout << "Seleccione el nuevo consultorio (1-10): ";
                                 evento.consultorio = obtenerEnteroValido();
                             }
-                            agenda.push_back(evento);
-                            std::cout << "Evento agregado con éxito." << std::endl;
-                            break;
-                        } else {
-                            std::cout << "Opción no válida. Ingrese 1 o 2." << std::endl;
+                            eventoInterfiere = eventoSeSuperpone(evento, agenda);
+                            if (!eventoInterfiere){
+                                break;
+                            }
+                            std::cout << "Este evento interfiere con otro evento nuevamente" << std::endl;
+                            
                         }
-                    }// fin del while de desea cambiar el evento
-                }else {//fin del if eventoSeSuperpone
+                    }
+                } while (eventoInterfiere);
+
                 agenda.push_back(evento); // Lo agrega al vector
-                }
                 break;
             case 2: // Mostrar eventos
                 if (!agenda.empty()) {
@@ -240,59 +260,61 @@ int main() {
                     std::cout << "No hay eventos para eliminar" << std::endl;
                 }
                 break;
-            case 5: // Editar evento
-                if (!agenda.empty()) {
-                    std::cout << "Ingrese el número de evento que desea editar: ";
-                    int numEvento = obtenerEnteroValido();
+                case 5: // Editar evento
+                    if (!agenda.empty()) {
+                        std::cout << "Ingrese el número de evento que desea editar: ";
+                        int numEvento = obtenerEnteroValido();
 
-                    if (numEvento >= 1 && numEvento <= agenda.size()) {
-                        evento = agenda[numEvento - 1]; // Obtenemos una referencia al evento que se va a editar
+                        if (numEvento >= 1 && numEvento <= agenda.size()) {
+                            evento = agenda[numEvento - 1]; // Obtenemos una referencia al evento que se va a editar
 
-                        std::cout << "Ingrese el nuevo nombre del evento: ";
-                        std::cin.ignore(); // Para consumir la nueva línea en el búfer.
-                        std::getline(std::cin, evento.nombres);
+                            std::cout << "Ingrese el nuevo nombre del evento: ";
+                            std::cin.ignore(); // Para consumir la nueva línea en el búfer.
+                            std::getline(std::cin, evento.nombres);
 
-                        std::cout << "Ingrese el nombre del doctor: ";
-                        std::cin.ignore();
-                        std::getline(std::cin, evento.doctores);
+                            std::cout << "Ingrese el nombre del doctor: ";
+                            std::cin.ignore();
+                            std::getline(std::cin, evento.doctores);
 
-                        std::cout << "Seleccione el nuevo consultorio (1-10): ";
-                        evento.consultorio = obtenerEnteroValido();
+                            do {    
+                                std::cout << "Seleccione el consultorio (1-10): ";
+                                evento.consultorio = obtenerEnteroValido();
 
-                        obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                        obtenerHoraValida(evento.hora, evento.minuto);
-                        obtenerHoraValida(evento.horaFin, evento.minutoFin);
+                                obtenerFechaValida(evento.dia, evento.mes, evento.año);
+                                obtenerHoraValida(evento.hora, evento.minuto);
+                                obtenerHoraValidaFinal(evento.horaFin, evento.minutoFin);
 
-                        if (eventoSeSuperpone(evento, agenda)) {
-                            std::cout << "Este evento editado interfiere con otro evento." << std::endl;
-                            char opcionCambio;
-                            while (true) {
-                                std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
-                                std::cin >> opcionCambio;
-                                if (opcionCambio == '1' || opcionCambio == '2') {
-                                    if (opcionCambio == '1') {
-                                        obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                                        obtenerHoraValida(evento.hora, evento.minuto);
-                                        obtenerHoraValida(evento.horaFin, evento.minutoFin);
-                                    } else if (opcionCambio == '2') {
-                                        std::cout << "Seleccione el nuevo consultorio (1-10): ";
-                                        evento.consultorio = obtenerEnteroValido();
-
+                                if (eventoSeSuperpone(evento, agenda)) {
+                                    std::cout << "Este evento interfiere con otro evento" << std::endl;
+                                    char opcionCambio;
+                                    while (true) {
+                                        std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
+                                        std::cin >> opcionCambio;
+                                        if (opcionCambio == '1') {
+                                            obtenerFechaValida(evento.dia, evento.mes, evento.año);
+                                            obtenerHoraValida(evento.hora, evento.minuto);
+                                            obtenerHoraValidaFinal(evento.horaFin, evento.minutoFin);
+                                        } else if (opcionCambio == '2') {
+                                            std::cout << "Seleccione el nuevo consultorio (1-10): ";
+                                            evento.consultorio = obtenerEnteroValido();
+                                        }
+                                        eventoInterfiere = eventoSeSuperpone(evento, agenda);
+                                        if (!eventoInterfiere) {
+                                            break;
+                                        }
+                                        std::cout << "Este evento interfiere con otro evento nuevamente" << std::endl;
                                     }
-                                    std::cout << "Evento editado con éxito." << std::endl;
-                                    break;
                                 }
-                            }
-                        } else {
+                            } while (eventoInterfiere);
                             std::cout << "Evento editado con éxito" << std::endl;
+                        } else {
+                            std::cout << "Número de evento no válido" << std::endl;
                         }
                     } else {
-                        std::cout << "Número de evento no válido" << std::endl;
+                        std::cout << "No hay eventos para editar" << std::endl;
                     }
-                } else {
-                    std::cout << "No hay eventos para editar" << std::endl;
-                }
-                break;
+                    break;
+
                 case 6: // Salir del programa
                     std::cout << "Saliendo del programa" << std::endl;
                     return 0;
@@ -300,7 +322,9 @@ int main() {
                     std::cout << "Opción no válida. Por favor, seleccione un número válido" << std::endl;
                     
             }//fin del switch case
-            }
+            
+    }
     return 0;
-}
+}                                  
+   
     

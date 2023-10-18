@@ -144,7 +144,7 @@ void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro 
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
-
+    bool eventoInterfiere = false;
     while (true) {
         std::cout << "MENU DE OPCIONES" << std::endl;
         std::cout << "1. Agregar un evento" << std::endl;
@@ -165,20 +165,22 @@ int main() {
                 std::getline(std::cin, evento.nombres);
                 std::cout << "Ingrese el nombre del doctor: ";
                 std::getline(std::cin, evento.doctores);
-                std::cout << "Seleccione el consultorio (1-10): ";
-                evento.consultorio = obtenerEnteroValido();
 
-                obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                obtenerHoraValida(evento.hora, evento.minuto);
-                obtenerHoraValida(evento.horaFin, evento.minutoFin);
 
-                if (eventoSeSuperpone(evento, agenda)){
-                    std::cout << "Este evento interfiere con otro evento" << std::endl;
-                    char opcionCambio;
-                    while (true) {
-                        std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
-                        std::cin >> opcionCambio;
-                        if (opcionCambio == '1' || opcionCambio == '2') {
+                do{    
+                    std::cout << "Seleccione el consultorio (1-10): ";
+                    evento.consultorio = obtenerEnteroValido();
+
+                    obtenerFechaValida(evento.dia, evento.mes, evento.año);
+                    obtenerHoraValida(evento.hora, evento.minuto);
+                    obtenerHoraValida(evento.horaFin, evento.minutoFin);
+
+                    if (eventoSeSuperpone(evento, agenda)){
+                        std::cout << "Este evento interfiere con otro evento" << std::endl;
+                        char opcionCambio;
+                        while (true) {
+                            std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
+                            std::cin >> opcionCambio;
                             if (opcionCambio == '1') {
                                 obtenerFechaValida(evento.dia, evento.mes, evento.año);
                                 obtenerHoraValida(evento.hora, evento.minuto);
@@ -187,16 +189,17 @@ int main() {
                                 std::cout << "Seleccione el nuevo consultorio (1-10): ";
                                 evento.consultorio = obtenerEnteroValido();
                             }
-                            agenda.push_back(evento);
-                            std::cout << "Evento agregado con éxito." << std::endl;
-                            break;
-                        } else {
-                            std::cout << "Opción no válida. Ingrese 1 o 2." << std::endl;
+                            eventoInterfiere = eventoSeSuperpone(evento, agenda);
+                            if (!eventoInterfiere){
+                                break;
+                            }
+                            std::cout << "Este evento interfiere con otro evento nuevamente" << std::endl;
+                            
                         }
-                    }// fin del while de desea cambiar el evento
-                }else {//fin del if eventoSeSuperpone
+                    }
+                } while (eventoInterfiere);
+
                 agenda.push_back(evento); // Lo agrega al vector
-                }
                 break;
             case 2: // Mostrar eventos
                 if (!agenda.empty()) {
@@ -302,5 +305,4 @@ int main() {
             }//fin del switch case
             }
     return 0;
-}
-    
+} 
