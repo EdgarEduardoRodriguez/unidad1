@@ -33,6 +33,115 @@ int obtenerEnteroValido() {//para que el usuario no ingrese letras
     return numero;//devuelve el numero ENTERO deseado
 }
 
+void gestionarDoctores(std::vector<std::string>& doctores) {
+std::string nuevoDoctor;
+    while (true) {
+        std::cout << "MENÚ DE GESTIÓN DE DOCTORES" << std::endl;
+        std::cout << "1. Agregar Doctor" << std::endl;
+        std::cout << "2. Editar Doctor" << std::endl;
+        std::cout << "3. Asignar Doctor a Consultorio" << std::endl;
+        std::cout << "4. Eliminar Doctor" << std::endl;
+        std::cout << "5. Mostrar Doctores" << std::endl;
+        std::cout << "6. Volver al menú principal" << std::endl;
+        std::cout << "Seleccione una opción: ";
+
+        int opc = obtenerEnteroValido();
+
+        switch (opc) {
+            case 1: // Agregar Doctor
+
+                std::cout << "Ingrese el nombre del nuevo doctor: ";
+                std::cin.ignore();
+                std::getline(std::cin, nuevoDoctor);
+                doctores.push_back(nuevoDoctor);
+                std::cout << "Doctor agregado con éxito." << std::endl;
+                break;
+            case 2: // Editar Doctor
+                if (!doctores.empty()) {
+                    std::cout << "Doctores registrados:" << std::endl;
+                    for (int i = 0; i < doctores.size(); i++) {
+                        std::cout << i + 1 << ". " << doctores[i] << std::endl;
+                    }
+
+                    std::cout << "Ingrese el número del doctor que desea editar: ";
+                    int numDoctor = obtenerEnteroValido();
+
+                    if (numDoctor >= 1 && numDoctor <= doctores.size()) {
+                        std::cout << "Ingrese el nuevo nombre del doctor: ";
+                        std::cin.ignore();
+                        std::getline(std::cin, nuevoDoctor); // Reutiliza nuevoDoctor
+                        doctores[numDoctor - 1] = nuevoDoctor;
+                        std::cout << "Doctor editado con éxito." << std::endl;
+                    } else {
+                        std::cout << "Número de doctor no válido." << std::endl;
+                    }
+                } else {
+                    std::cout << "No hay doctores para editar." << std::endl;
+                }
+                break;
+            case 3: 
+            if (!doctores.empty()) {
+                std::cout << "Doctores registrados:" << std::endl;
+                for (int i = 0; i < doctores.size(); i++) {
+                    std::cout << i + 1 << ". " << doctores[i] << std::endl;
+                }
+
+                std::cout << "Ingrese el número del doctor al que desea asignar un consultorio: ";
+                int numDoctor = obtenerEnteroValido();
+
+                if (numDoctor >= 1 && numDoctor <= doctores.size()) {
+                    std::cout << "Ingrese el número del consultorio (1-10) al que desea asignar al doctor: ";
+                    int numConsultorio = obtenerEnteroValido();
+                        
+                    if (numConsultorio >= 1 && numConsultorio <= 10) {
+                        // Aquí asigna al doctor seleccionado al consultorio correspondiente
+                        doctores[numDoctor - 1].push_back(numConsultorio);
+                        std::cout << "Doctor \"" << doctores[numDoctor - 1] << "\" asignado al consultorio " << numConsultorio << " con éxito." << std::endl;
+                    } else {
+                        std::cout << "Número de consultorio no válido." << std::endl;
+                    }
+                } else {
+                    std::cout << "Número de doctor no válido." << std::endl;
+                }
+            } else {
+                std::cout << "No hay doctores para asignar a consultorios." << std::endl;
+            }
+            break;
+            case 4: // Eliminar Doctor
+                if (!doctores.empty()) {
+                    std::cout << "Doctores registrados:" << std::endl;
+                    for (int i = 0; i < doctores.size(); i++) {
+                        std::cout << i + 1 << ". " << doctores[i] << std::endl;
+                    }
+                
+                    std::cout << "Ingrese el número del doctor que desea eliminar: ";
+                    int numDoctor = obtenerEnteroValido();
+                
+                    if (numDoctor >= 1 && numDoctor <= doctores.size()) {
+                        std::string doctorEliminado = doctores[numDoctor - 1]; // Guarda el nombre del doctor que se eliminará
+                        doctores.erase(doctores.begin() + numDoctor - 1); // Elimina el doctor seleccionado de la lista
+                        std::cout << "Doctor \"" << doctorEliminado << "\" eliminado con éxito." << std::endl;
+                    } else {
+                        std::cout << "Número de doctor no válido." << std::endl;
+                    }
+                } else {
+                    std::cout << "No hay doctores para eliminar." << std::endl;
+                }
+            break;
+            case 5: // Mostrar Doctores
+                std::cout << "Doctores registrados:" << std::endl;
+                for (const std::string& doctor : doctores) {
+                    std::cout << "- " << doctor << std::endl;
+                }
+                break;
+            case 6: // Volver al menú principal
+                return;
+            default:
+                std::cout << "Opción no válida. Por favor, seleccione un número válido" << std::endl;
+        }
+    }
+}
+
 void obtenerFechaValida(int& dia, int& mes, int& año) {//funcion para preguntar la fecha y verificar si esta bien
     while (true) {
         std::cout << "Ingrese la fecha del evento (día/mes/año): ";
@@ -161,15 +270,17 @@ void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro 
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
+    std::vector<std::string> doctores;
     bool eventoInterfiere = false;
     while (true) {
         std::cout << "MENU DE OPCIONES" << std::endl;
-        std::cout << "1. Agregar un evento" << std::endl;
-        std::cout << "2. Mostrar todos los eventos" << std::endl;
-        std::cout << "3. Mostrar tiempo para el evento" << std::endl;
-        std::cout << "4. Eliminar un evento" << std::endl; // Opción para eliminar eventos
-        std::cout << "5. Editar un evento" << std::endl;   // Opción para editar eventos
-        std::cout << "6. Salir" << std::endl;
+        std::cout << "1. Gestión de Doctores" << std::endl;
+        std::cout << "2. Agregar un evento" << std::endl;
+        std::cout << "3. Mostrar todos los eventos" << std::endl;
+        std::cout << "4. Mostrar tiempo para el evento" << std::endl;
+        std::cout << "5. Eliminar un evento" << std::endl; // Opción para eliminar eventos
+        std::cout << "6. Editar un evento" << std::endl;   // Opción para editar eventos
+        std::cout << "7. Salir" << std::endl;
         std::cout << "Seleccione una opción: ";
 
         int opc = obtenerEnteroValido();
@@ -177,7 +288,10 @@ int main() {
         evento evento; // Declaración de una variable evento para guardar temporalmente los datos de un evento
 
         switch (opc) {
-            case 1: // Agregar eventos
+            case 1: // gestión de Doctores
+                gestionarDoctores(doctores);
+                break;
+            case 2: // Agregar eventos
                 std::cout << "Ingrese el nombre del evento: ";
                 std::getline(std::cin, evento.nombres);
                 std::cout << "Ingrese el nombre del doctor: ";
@@ -218,7 +332,7 @@ int main() {
 
                 agenda.push_back(evento); // Lo agrega al vector
                 break;
-            case 2: // Mostrar eventos
+            case 3: // Mostrar eventos
                 if (!agenda.empty()) {
                     std::cout << "Lista de Eventos:" << std::endl;
                     for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
@@ -229,7 +343,7 @@ int main() {
                     std::cout << "No hay eventos para mostrar" << std::endl;
                 }
                 break;
-            case 3: // Calcular tiempo para el evento
+            case 4: // Calcular tiempo para el evento
                 if (!agenda.empty()) {
                     std::cout << "Ingrese el número de evento: ";
                     int numEvento = obtenerEnteroValido();
@@ -244,7 +358,7 @@ int main() {
                     std::cout << "No hay eventos para mostrar" << std::endl;
                 }
                 break;
-            case 4: // Eliminar evento
+            case 5: // Eliminar evento
                 if (!agenda.empty()) {
                     std::cout << "Ingrese el número de evento que desea eliminar: ";
                     int numEvento = obtenerEnteroValido();
@@ -260,7 +374,7 @@ int main() {
                     std::cout << "No hay eventos para eliminar" << std::endl;
                 }
                 break;
-                case 5: // Editar evento
+                case 6: // Editar evento
                     if (!agenda.empty()) {
                         std::cout << "Ingrese el número de evento que desea editar: ";
                         int numEvento = obtenerEnteroValido();
@@ -315,7 +429,7 @@ int main() {
                     }
                     break;
 
-                case 6: // Salir del programa
+                case 7: // Salir del programa
                     std::cout << "Saliendo del programa" << std::endl;
                     return 0;
                 default:
@@ -325,6 +439,6 @@ int main() {
             
     }
     return 0;
-}                                  
+}
    
     
