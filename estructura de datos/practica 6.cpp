@@ -29,12 +29,12 @@ int busquedaBinaria(const std::vector<int>& array, int clave, int& limiteInferio
 }
 
 void ordenarBurbuja(std::vector<int>& array) {
-    int n = array.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
-            if (array[j] > array[j + 1]) {
+    int n = array.size(); // se obtiene el tamaño del vector y se almacena en "n"
+    for (int i = 0; i < n - 1; i++) {// en este ciclo for se ejecuta en n - 1 mira si el elemento mas grande esta en su posicion correcta
+        for (int j = 0; j < n - i - 1; j++) {// este for sirve para saber si el numero mas grande ya esta en su lugar y no necesita compararlo nuevamente
+            if (array[j] > array[j + 1]) { // este if sirve para intercambair los valores por ejemplo posicion j son el elemento en la posicion j + 1 si el elemento en j es mayor que el elemeneto en j + q se intercambia 
                 // intercambiar los elementos si están en el orden incorrecto
-                std::swap(array[j], array[j + 1]);
+                std::swap(array[j], array[j + 1]);// swap es para intercambiar si se cumple la condicion arriba 
             }
         }
     }
@@ -82,12 +82,12 @@ int main() {
                     
                 limiteInferior = -1;
                 limiteSuperior = -1;
-                inicio = std::clock();
+                inicio = std::clock();// tomando el tiempo de inicio 
                 ordenarBurbuja(array);// ordenamiento del vector con metodo burbuja
-                posicion = busquedaBinaria(array, clave, limiteInferior, limiteSuperior);
-                fin = std::clock();
-                tiempoTranscurrido = static_cast<double>(fin - inicio) / CLOCKS_PER_SEC * 1000.0;
-                    
+                posicion = busquedaBinaria(array, clave, limiteInferior, limiteSuperior);// llama a la funcion para la busqueda binaria
+                fin = std::clock();// terminado el tiempo caundo acabe
+                tiempoTranscurrido = static_cast<double>(fin - inicio) / CLOCKS_PER_SEC * 1000.0;// restamos fin - inicio y luego divimos en los ciclos de reloj de cpu a segunos y luego multiplicamos por 1000 para obtener los milisegundos 
+                                              
                 if (posicion != -1) {
                     std::cout << "Se encontró el valor buscado en la posición " << posicion << std::endl;
                     std::cout << "Límite inferior: " << limiteInferior << std::endl;

@@ -281,6 +281,44 @@ void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro 
         std::cout << std::endl;
     }
 }
+void agregarEvento(std::vector<evento>& agenda, const std::vector<std::vector<std::string>>& consultoriosDoctores) {
+    if (consultoriosDoctores.empty()) {
+        std::cout << "No se pueden agregar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
+        return;
+    }
+
+    evento nuevoEvento;
+
+    std::cout << "Ingrese el nombre del paciente: ";
+    std::cin.ignore();
+    std::getline(std::cin, nuevoEvento.nombres);
+
+    std::cout << "Consultorios existentes:" << std::endl;
+    for (size_t i = 0; i < consultoriosDoctores.size(); ++i) {
+        std::cout << i + 1 << ". Consultorio " << i + 1 << " - Doctor: " << consultoriosDoctores[i][0] << std::endl;
+    }
+
+    std::cout << "Seleccione el número del consultorio al que desea asignar al paciente: ";
+    int numConsultorio = obtenerEnteroValido();
+
+    if (numConsultorio >= 1 && numConsultorio <= consultoriosDoctores.size()) {
+        nuevoEvento.consultorio = numConsultorio;
+    } else {
+        std::cout << "Número de consultorio no válido." << std::endl;
+        return;
+    }
+
+    obtenerFechaValida(nuevoEvento.dia, nuevoEvento.mes, nuevoEvento.año);
+    obtenerHoraValida(nuevoEvento.hora, nuevoEvento.minuto);
+    obtenerHoraValidaFinal(nuevoEvento.horaFin, nuevoEvento.minutoFin);
+
+    if (eventoInterfiere(nuevoEvento, agenda)) {
+        std::cout << "La cita coincide con otra en el mismo consultorio. Por favor, elija otro horario." << std::endl;
+    } else {
+        agenda.push_back(nuevoEvento);
+        std::cout << "Evento agregado con éxito." << std::endl;
+    }
+}
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
@@ -305,58 +343,8 @@ int main() {
             case 1: // gestión de Doctores
                 gestionarDoctores(consultoriosDoctores);
                 break;
-            case 2: // Agregar eventos
-                evento = {}; // Limpia cualquier evento anterior
-            
-                hayConsultoriosConDoctores = hayDoctores(consultoriosDoctores);
-                if (!hayConsultoriosConDoctores) {
-                    std::cout << "No se pueden agregar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
-                    break;
-                }
-            
-                // Nombre del paciente
-                std::cout << "Ingrese el nombre del paciente: ";
-                std::cin.ignore(); // Para consumir la nueva línea en el búfer.
-                std::getline(std::cin, evento.nombres);
-            
-                int numConsultorio;
-            
-                
-                while (true) {
-                    // Solicita al usuario que ingrese el número del consultorio
-                    std::cout << "Ingrese el número del consultorio al que se asignará el paciente (1-10): ";
-                    numConsultorio = obtenerEnteroValido();
-            
-                    if (numConsultorio < 1 || numConsultorio > 10) {
-                        std::cout << "Número de consultorio no válido. Debe estar entre 1 y 10." << std::endl;
-                    } else if (consultoriosDoctores[numConsultorio - 1][1].empty()) {
-                        std::cout << "No hay doctor asignado en este consultorio. Por favor, seleccione otro consultorio." << std::endl;
-                    } else {
-                        // Un consultorio válido con un doctor ha sido seleccionado
-                        evento.consultorio = numConsultorio;
-                        break;
-                    }
-                }
-                // Fecha del evento
-                obtenerFechaValida(evento.dia, evento.mes, evento.año);
-            
-                // Hora de entrada
-                obtenerHoraValida(evento.hora, evento.minuto);
-            
-                // Hora de salida
-                obtenerHoraValidaFinal(evento.horaFin, evento.minutoFin);
-            
-                // Verificar interferencia de la cita
-                if (eventoInterfiere(evento, agenda)) {
-                    std::cout << "Doctor asignado al consultorio " << evento.consultorio << ": " << consultoriosDoctores[evento.consultorio - 1][0] << std::endl;
-                    evento.doctores = consultoriosDoctores[evento.consultorio - 1][0];
-            
-                    // Añade el evento a la agenda
-                    agenda.push_back(evento);
-                    std::cout << "Evento agregado con éxito." << std::endl;
-                } else {
-                    std::cout << "La nueva cita interfiere con otra cita en el mismo consultorio. No se puede agregar." << std::endl;
-                }
+            case 2:
+                agregarEvento(agenda, consultoriosDoctores);
                 break;
             case 3: // Mostrar eventos
                 if (!hayConsultoriosConDoctores) {
@@ -463,6 +451,3 @@ int main() {
     
     return 0;
 }
-
-   
-    
