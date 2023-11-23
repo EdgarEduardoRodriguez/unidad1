@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <cstdlib>
 #include <ctime>
 
@@ -39,16 +40,55 @@ void ordenarBurbuja(std::vector<int>& array) {
         }
     }
 }
+void SinRepetir(std::vector<int>& array, int tamano) {// declaracion de funcion para no repetir numeros 
+    std::set<int> numerosGenerados; // conjunto para rastrear los números generados
+    std::srand(static_cast<unsigned>(std::time(nullptr))); // para no sean numeros con signo osea que no esten en negativo
+                                                           // el time agarra de la computadora para hacer una secuencia de numeros aleatorios 
+    for (int i = 0; i < tamano; i++) {// este for es para hacer la secuancia del 0 al 9999 que esta registrado en la variable tamaño
+        int numeroAleatorio;
+        do {
+            numeroAleatorio = std::rand() % tamano;// secuencia de numeros aleatorios
+        } while (numerosGenerados.count(numeroAleatorio) > 0);// hacer hasta que el numero sea mayor a 0
+
+        numerosGenerados.insert(numeroAleatorio);// se asegura de que no se repitan los numeros futura interación
+        array[i] = numeroAleatorio; // pone los numeros generados al array 
+    }
+}
+
+// Función de partición para Quick Sort
+int particion(std::vector<int>& array, int bajo, int alto) {// toma un vector y tambien toma los indices bajo y altop que van a representar la porcion del vector que se va a particionar (dividir)
+    int pivote = array[alto]; // toma el último elemento como pivote que se utilizara para divdir el vector en dos partes
+    int i = bajo - 1; // toma el primer elemento se va a utilizar para saber donde la posicion donde se establecera el pivote después de la partición
+
+    for (int j = bajo; j <= alto - 1; j++) {// este ciclo for recorrera el vector de desde bajo hasta alto, comparara cada elemento con el pivote y realiza intercambios 
+        if (array[j] < pivote) {// compara el elemento actual es menor que el pivote
+            i++;// incrementa el elemento actual si es menor que el pivote
+            std::swap(array[i], array[j]);// intercambia los elementos menores que esten a la izquierda 
+        }
+    }
+
+    std::swap(array[i + 1], array[alto]);// despues de recorrer todo el vector intercambia el pivote con el elemento en la posicion siguinte de i y el pivote queda en su posicion final en el vector
+    return i + 1;// deveulve la posición del pivote después de la partición
+}
+
+// Función de ordenamiento Quick Sort
+void quickSort(std::vector<int>& array, int bajo, int alto) {
+    if (bajo < alto) {// verifica si hay más de un elemento en la porción del vector que se esta ordenando
+        
+        int p = particion(array, bajo, alto);// le damos a p el valor de partición depues de esto p(partición) esta en su lugar final
+
+        quickSort(array, bajo, p - 1);// ordena el pivote de la izquierda
+        quickSort(array, p + 1, alto);// ordena la porcion del pivote de la derecha
+    }
+}
 
 int main() {
-    std::vector<int> array(200);
+    std::vector<int> array(30000);// declaracion del array
     
-    // Llenar el vector con números aleatorios
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-    for (int i = 0; i < 200; i++) {
-        array[i] = std::rand() % 1000; // Números aleatorios entre 0 y 999
-    }
     
+    SinRepetir(array, 30000); //llama a la funcion 
+    
+   
 
     double tiempoTranscurrido;// para alamacenar el tiempo en milisegundos 
     std::clock_t inicio, fin;// para registrar el tiempo 
@@ -60,17 +100,18 @@ int main() {
         std::cout << "1. Mostrar vector" << std::endl;
         std::cout << "2. Realizar búsqueda binaria" << std::endl;
         std::cout << "3. Realizar metodo secuencial" << std::endl;
-        std::cout << "4. Mostrar el vector ordenado" << std::endl;
-        std::cout << "4. Salir" << std::endl;
+        std::cout << "4. Mostrar el vector ordenado por metodo burbuja" << std::endl;
+        std::cout << "5. Mostrar el vector ordenado por metodo quickSort" << std::endl;
+        std::cout << "6. Salir" << std::endl;
         std::cout << "Seleccione una opción: ";
         
         int opcion;
         std::cin >> opcion;
-        
+        std::vector<int> v_desordenado (array);
         switch (opcion) {
             case 1:
                 std::cout << "Vector: ";
-                for (int valor : array) {
+                for (int valor : array ) {
                     std::cout << valor << " ";
                 }
                 std::cout << std::endl;
@@ -83,8 +124,8 @@ int main() {
                 limiteInferior = -1;
                 limiteSuperior = -1;
                 inicio = std::clock();// tomando el tiempo de inicio 
-                ordenarBurbuja(array);// ordenamiento del vector con metodo burbuja
-                posicion = busquedaBinaria(array, clave, limiteInferior, limiteSuperior);// llama a la funcion para la busqueda binaria
+                ordenarBurbuja(v_desordenado);// ordenamiento del vector con metodo burbuja
+                posicion = busquedaBinaria(v_desordenado, clave, limiteInferior, limiteSuperior);// llama a la funcion para la busqueda binaria
                 fin = std::clock();// terminado el tiempo caundo acabe
                 tiempoTranscurrido = static_cast<double>(fin - inicio) / CLOCKS_PER_SEC * 1000.0;// restamos fin - inicio y luego divimos en los ciclos de reloj de cpu a segunos y luego multiplicamos por 1000 para obtener los milisegundos 
                                               
@@ -113,19 +154,19 @@ int main() {
                 std::cin >> clave;
 
                 inicio = std::clock();
-                ordenarBurbuja(array);// ordenamiento del vector con metodo burbuja
+                ordenarBurbuja(v_desordenado);// ordenamiento del vector con metodo burbuja
                 bool encontrado = false;
 
-                for (int i = 0; i < array.size(); i++) {// declaracion de ciclo for para saber la posicion 
-                    if (array[i] == clave) { // guarda la posicion en donde encontro el resultado 
+                for (int i = 0; i < v_desordenado.size(); i++) {// declaracion de ciclo for para saber la posicion 
+                    if (v_desordenado[i] == clave) { // guarda la posicion en donde encontro el resultado 
                         std::cout << "Se encontró el valor buscado en la posición " << i << std::endl;
                         encontrado = true;
                         break;
                     }
                 }
                 
-                for (int i = 0; i < array.size(); i++) {// se declara un for que rcorrerá array se ejecutar desde i = 0 hasta i sea menor que el tamaño del vector array
-                    if (array[i] == clave) {
+                for (int i = 0; i < v_desordenado.size(); i++) {// se declara un for que rcorrerá array se ejecutar desde i = 0 hasta i sea menor que el tamaño del vector array
+                    if (v_desordenado[i] == clave) {
                         std::cout << "Se encontró el valor buscado en la posición " << i << std::endl;
                         encontrado = true;
                         break;
@@ -154,8 +195,8 @@ int main() {
             case 4:
                 std::cout << "Vector: ";
                 inicio = std::clock();
-                ordenarBurbuja(array);
-                for (int valor : array) {
+                ordenarBurbuja(v_desordenado);
+                for (int valor : v_desordenado) {
                     std::cout << valor << " ";
                 }
                 std::cout << std::endl;
@@ -164,6 +205,20 @@ int main() {
                 std::cout << "Tiempo transcurrido de organizamiento del vector: " << tiempoTranscurrido << " milisegundos" << std::endl;
                 break;
             case 5:
+                inicio = std::clock();
+                quickSort(v_desordenado, 0, v_desordenado.size() - 1);// llamamos al vector v_desordenado indice bajo 0 y indice alto como la cantidad de elemetos en el vector -1
+                fin = std::clock();
+            
+                std::cout << "Vector ordenado después de Quick Sort: ";
+                for (int valor : v_desordenado) {// ciclo para mostrar cada elemeto del vector
+                    std::cout << valor << " ";
+                }
+                std::cout << std::endl;
+            
+                tiempoTranscurrido = static_cast<double>(fin - inicio) / CLOCKS_PER_SEC * 1000.0;
+                std::cout << "Tiempo transcurrido de organizamiento del vector: " << tiempoTranscurrido << " milisegundos" << std::endl;
+                break;
+            case 6:
                 std::cout << "Saliendo del programa." << std::endl;
                 return 0;
             default:

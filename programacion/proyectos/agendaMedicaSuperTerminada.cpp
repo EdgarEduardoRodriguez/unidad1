@@ -3,6 +3,8 @@
 #include <vector>
 #include <ctime>
 #include <limits>
+#include <algorithm> // Agregar esta librería para usar std::sort
+#include <chrono> 
 
 // Definición de la estructura para representar un evento
 struct evento {
@@ -41,7 +43,6 @@ void gestionarDoctores(std::vector<std::vector<std::string>>&consultoriosDoctore
         switch (opc) {
             case 1: // Agregar Doctor
                 std::cout << "Ingrese el nombre del nuevo doctor: ";
-                std::cin.ignore();
                 std::getline(std::cin, nuevoDoctor);
                 consultoriosDoctores.push_back({ nuevoDoctor, "" });
                 std::cout << "Doctor agregado con éxito." << std::endl;
@@ -76,20 +77,33 @@ void gestionarDoctores(std::vector<std::vector<std::string>>&consultoriosDoctore
                     for (int i = 0; i < consultoriosDoctores.size(); i++) {
                         std::cout << i + 1 << ". " << consultoriosDoctores[i][0] << std::endl;
                     }
-
+            
                     std::cout << "Ingrese el número del doctor al que desea asignar un consultorio: ";
                     int numDoctor = obtenerEnteroValido();
-
+            
                     if (numDoctor >= 1 && numDoctor <= consultoriosDoctores.size()) {
-                        std::cout << "Seleccione el consultorio (1-10) al que desea asignar al doctor: ";
-                        int numConsultorio = obtenerEnteroValido();
-
-                        if (numConsultorio >= 1 && numConsultorio <= 10) {
-                            consultoriosDoctores[numDoctor - 1][1] = std::to_string(numConsultorio);
-                            std::cout << "Doctor \"" << consultoriosDoctores[numDoctor - 1][0]
-                                << "\" asignado al consultorio " << numConsultorio << " con éxito." << std::endl;
+                        // Verificar si el consultorio ya está ocupado
+                        if (consultoriosDoctores[numDoctor - 1][1].empty()) {
+                            std::cout << "Seleccione el consultorio (1-10) al que desea asignar al doctor: ";
+                            int numConsultorio = obtenerEnteroValido();
+            
+                            bool consultorioDisponible = true;
+                            for (const auto& doctor : consultoriosDoctores) {
+                                if (doctor[1] == std::to_string(numConsultorio)) {
+                                    consultorioDisponible = false;
+                                    break;
+                                }
+                            }
+            
+                            if (numConsultorio >= 1 && numConsultorio <= 10 && consultorioDisponible) {
+                                consultoriosDoctores[numDoctor - 1][1] = std::to_string(numConsultorio);
+                                std::cout << "Doctor \"" << consultoriosDoctores[numDoctor - 1][0]
+                                          << "\" asignado al consultorio " << numConsultorio << " con éxito." << std::endl;
+                            } else {
+                                std::cout << "El consultorio seleccionado ya tiene un doctor asignado o no es válido." << std::endl;
+                            }
                         } else {
-                            std::cout << "Número de consultorio no válido." << std::endl;
+                            std::cout << "El doctor seleccionado ya tiene un consultorio asignado." << std::endl;
                         }
                     } else {
                         std::cout << "Número de doctor no válido." << std::endl;
@@ -98,7 +112,6 @@ void gestionarDoctores(std::vector<std::vector<std::string>>&consultoriosDoctore
                     std::cout << "No hay doctores para asignar a consultorios." << std::endl;
                 }
                 break;
-
             case 4: // Eliminar Doctor
                 if (!consultoriosDoctores.empty()) {
                     std::cout << "Doctores registrados:" << std::endl;
@@ -206,81 +219,25 @@ void obtenerHoraValidaFinal(int& hora, int& minuto) {//funcion para preguntar la
         std::cout << "Formato de hora no válido. Use el formato HH:MM (por ejemplo, 13:30)." << std::endl;
     }
 }
-// Función para verificar si una nueva cita interfiere con otras citas en el mismo consultorio
+//funcion por si una cita interfiere
 bool eventoInterfiere(const evento& nuevaCita, const std::vector<evento>& agenda) {
     for (const evento& cita : agenda) {
-        if (cita.consultorio == nuevaCita.consultorio &&
-            ((nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
-                nuevaCita.hora < cita.horaFin && nuevaCita.horaFin > cita.hora) ||
-             (nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
-                nuevaCita.hora == cita.hora && nuevaCita.minuto == cita.minuto) ||
-             (nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
-                nuevaCita.horaFin == cita.horaFin && nuevaCita.minutoFin == cita.minutoFin))) {
-            return true; // Hay interferencia
+        if (&cita != &nuevaCita) { // Compara si la cita no es la misma que se está editando
+            if (cita.consultorio == nuevaCita.consultorio &&
+                ((nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
+                    nuevaCita.hora < cita.horaFin && nuevaCita.horaFin > cita.hora) ||
+                 (nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
+                    nuevaCita.hora == cita.hora && nuevaCita.minuto == cita.minuto) ||
+                 (nuevaCita.año == cita.año && nuevaCita.mes == cita.mes && nuevaCita.dia == cita.dia &&
+                    nuevaCita.horaFin == cita.horaFin && nuevaCita.minutoFin == cita.minutoFin))) {
+                return true; // Hay interferencia
+            }
         }
     }
     return false; // No hay interferencia
 }
 
-// Función para calcular la hora de diferencia
-void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro para que no se haga una copia inecesaria de datos
-    time_t ahora = time(0);// Obtiene la hora actual del sistema y la guarda en la variable ahora
-    tm eventoTime = {};// Se declara una estructura que sirve para representar la fecha y la hora del evento
-    eventoTime.tm_year = ev.año - 1900; // Se le resta al 1900 al año por la estructura "tm" si ingresa 2023 se le resta 1900 y queda 123 y así lo lee
-    eventoTime.tm_mon = ev.mes - 1;
-    eventoTime.tm_mday = ev.dia;
-    eventoTime.tm_hour = ev.hora;
-    eventoTime.tm_min = ev.minuto;
-    eventoTime.tm_sec = 0;
 
-    time_t eventoTiempo = mktime(&eventoTime);// La estructura eventoTime se convierte en un valor de tiempo (time_t) que representa la fecha y hora del evento seleccionado
-    double segundosRestantes = difftime(eventoTiempo, ahora); // Esto calcula la diferencia de segundos entre el tiempo del evento "eventoTiempo" y el tiempo actual "ahora" que dice cuántos segundos faltan para que ocurra el evento con el difftime
-
-    if (segundosRestantes < 0) {// Verifica si los segundos son menores a cero
-        std::cout << "El evento \"" << ev.nombres << "\" ya ha pasado" << std::endl;
-    } else { //variables con los segundos de un minuto, hora,dias,meses,años
-        const int segundosEnMinuto = 60;
-        const int segundosEnHora = 3600;
-        const int segundosEnDia = 86400;
-        const int segundosEnMes = 2592000; // teniendo en cuanta que un mes tiene 30.44 dias
-        const int segundosEnAño = 31536000; // teniendo en cuenta que un año tiene 365.25 dias
-
-        int añosRestantes = static_cast<int>(segundosRestantes / segundosEnAño); //la operacion aqui declaramos un entero añosRestantes que es igual a segundosRestantes que esta variable esta en double y que almacena la fecha ingresada en segundos 
-        segundosRestantes -= añosRestantes * segundosEnAño;                      //se divide en segundos en años que lo declaramos luego años restantes es igual menos segundos restantes multiplicado por segundos en años y lo mismo en las demas lineas
-
-        int mesesRestantes = static_cast<int>(segundosRestantes / segundosEnMes); // Divide segundos en meses
-        segundosRestantes -= mesesRestantes * segundosEnMes;
-
-        int diasRestantes = static_cast<int>(segundosRestantes / segundosEnDia); // Divide segundos en días
-        segundosRestantes -= diasRestantes * segundosEnDia;
-
-        int horasRestantes = static_cast<int>(segundosRestantes / segundosEnHora); // Divide segundos en horas
-        segundosRestantes -= horasRestantes * segundosEnHora;
-
-        int minutosRestantes = static_cast<int>(segundosRestantes / segundosEnMinuto); // Convierte segundos en minutos
-
-        std::cout << "Tiempo restante para el evento \"" << ev.nombres << "\":" << std::endl;
-        if (añosRestantes > 0) {//agara la variable ya convertidas en años y la muestra junto con las demas lineas de este if 
-            std::cout << añosRestantes << " año(s) ";
-        }
-        if (mesesRestantes > 0) {
-            std::cout << mesesRestantes << " mes(es) ";
-        }
-        if (diasRestantes > 0) {
-            std::cout << diasRestantes << " día(s) ";
-        }
-        if (horasRestantes > 0) {
-            std::cout << horasRestantes << " hora(s) ";
-        }
-        if (minutosRestantes > 0) {
-            std::cout << minutosRestantes << " minuto(s) ";
-        }
-        if (añosRestantes == 0 && mesesRestantes == 0 && diasRestantes == 0 && horasRestantes == 0 && minutosRestantes == 0) {
-            std::cout << "El evento es ahora";
-        }
-        std::cout << std::endl;
-    }
-}
 void agregarEvento(std::vector<evento>& agenda, const std::vector<std::vector<std::string>>& consultoriosDoctores) {
     if (consultoriosDoctores.empty()) {
         std::cout << "No se pueden agregar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
@@ -295,7 +252,7 @@ void agregarEvento(std::vector<evento>& agenda, const std::vector<std::vector<st
 
     std::cout << "Consultorios existentes:" << std::endl;
     for (size_t i = 0; i < consultoriosDoctores.size(); ++i) {
-        std::cout << i + 1 << ". Consultorio " << i + 1 << " - Doctor: " << consultoriosDoctores[i][0] << std::endl;
+        std::cout << i + 1 << ". " << consultoriosDoctores[i][0] << " - Consultorio: " << consultoriosDoctores[i][1] << std::endl;
     }
 
     std::cout << "Seleccione el número del consultorio al que desea asignar al paciente: ";
@@ -312,13 +269,190 @@ void agregarEvento(std::vector<evento>& agenda, const std::vector<std::vector<st
     obtenerHoraValida(nuevoEvento.hora, nuevoEvento.minuto);
     obtenerHoraValidaFinal(nuevoEvento.horaFin, nuevoEvento.minutoFin);
 
-    if (eventoInterfiere(nuevoEvento, agenda)) {
-        std::cout << "La cita coincide con otra en el mismo consultorio. Por favor, elija otro horario." << std::endl;
+    while (eventoInterfiere(nuevoEvento, agenda)) {
+        std::cout << "La cita coincide con otra en el mismo consultorio." << std::endl;
+        std::cout << "¿Desea cambiar la fecha, el consultorio o cancelar la operación?" << std::endl;
+        std::cout << "1. Cambiar la fecha" << std::endl;
+        std::cout << "2. Cambiar el consultorio" << std::endl;
+        std::cout << "3. Cancelar" << std::endl;
+        std::cout << "Seleccione una opción: ";
+        
+        int cambio = obtenerEnteroValido();
+
+        switch (cambio) {
+            case 1: // Cambiar la fecha
+                obtenerFechaValida(nuevoEvento.dia, nuevoEvento.mes, nuevoEvento.año);
+                break;
+            case 2: // Cambiar el consultorio
+                std::cout << "Consultorios existentes:" << std::endl;
+                for (size_t i = 0; i < consultoriosDoctores.size(); ++i) {
+                    std::cout << i + 1 << ". " << consultoriosDoctores[i][0] << " - Consultorio: " << consultoriosDoctores[i][1] << std::endl;
+                }
+                std::cout << "Seleccione el número del consultorio al que desea asignar al paciente: ";
+                numConsultorio = obtenerEnteroValido();
+                if (numConsultorio >= 1 && numConsultorio <= consultoriosDoctores.size()) {
+                    nuevoEvento.consultorio = numConsultorio;
+                } else {
+                    std::cout << "Número de consultorio no válido." << std::endl;
+                    return;
+                }
+                break;
+            case 3: // Cancelar la operación
+                std::cout << "Operación cancelada." << std::endl;
+                return;
+            default:
+                std::cout << "Opción no válida. Por favor, seleccione un número válido." << std::endl;
+        }
+    }
+
+    agenda.push_back(nuevoEvento);
+    std::cout << "Evento agregado con éxito." << std::endl;
+}
+void mostrarEventosProximos30Dias(const std::vector<evento>& agenda) {
+    std::vector<evento> eventosProximos30Dias;
+
+    // Obtener la fecha actual
+    std::chrono::system_clock::time_point today = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(today);
+
+    std::tm localTime = *std::localtime(&currentTime);
+    int todayDay = localTime.tm_mday;
+    int todayMonth = localTime.tm_mon + 1; // tm_mon va de 0 a 11, por lo que sumamos 1 para obtener el mes real
+    int todayYear = localTime.tm_year + 1900; // tm_year cuenta desde 1900, por lo que sumamos 1900
+
+    for (const evento& ev : agenda) {
+        // Verificar si el evento está dentro de los próximos 30 días
+        if (ev.año == todayYear && ev.mes == todayMonth) {
+            if (ev.dia >= todayDay && ev.dia - todayDay <= 30) {
+                eventosProximos30Dias.push_back(ev);
+            }
+        }
+    }
+
+    if (!eventosProximos30Dias.empty()) {
+        // Ordenar los eventos por fecha
+        std::sort(eventosProximos30Dias.begin(), eventosProximos30Dias.end(), [](const evento& a, const evento& b) {
+            // Comparar las fechas
+            if (a.año != b.año) {
+                return a.año < b.año;
+            } else if (a.mes != b.mes) {
+                return a.mes < b.mes;
+            } else {
+                return a.dia < b.dia;
+            }
+        });
+
+        std::cout << "Eventos de los próximos 30 días:" << std::endl;
+        for (const evento& ev : eventosProximos30Dias) {
+            std::cout << "Nombre del Paciente: " << ev.nombres << " Fecha: " << ev.dia << "/" << ev.mes << "/" << ev.año
+                      << " Hora: " << ev.hora << ":" << ev.minuto << " - " << ev.horaFin << ":" << ev.minutoFin << std::endl;
+        }
     } else {
-        agenda.push_back(nuevoEvento);
-        std::cout << "Evento agregado con éxito." << std::endl;
+        std::cout << "No hay eventos en los próximos 30 días." << std::endl;
     }
 }
+void editarEvento(std::vector<evento>& agenda, const std::vector<std::vector<std::string>>& consultoriosDoctores) {
+    if (agenda.empty()) {
+        std::cout << "No hay eventos para editar." << std::endl;
+        return;
+    }
+
+    std::cout << "Seleccione el número de la cita que desea editar:" << std::endl;
+    for (int i = 0; i < agenda.size(); i++) {
+        std::cout << i + 1 << ". Nombre: " << agenda[i].nombres << " - Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año
+                  << " - Hora: " << agenda[i].hora << ":" << agenda[i].minuto << " - Doctor: ";
+        int consultorioEvento = agenda[i].consultorio;
+        std::string nombreDoctor = (consultorioEvento >= 1 && consultorioEvento <= consultoriosDoctores.size())
+                                      ? consultoriosDoctores[consultorioEvento - 1][0]
+                                      : "No asignado";
+        std::cout << nombreDoctor << std::endl;
+    }
+
+    int numCita;
+    std::cout << "Ingrese el número de la cita que desea editar: ";
+    std::cin >> numCita;
+
+    if (numCita >= 1 && numCita <= agenda.size()) {
+        evento& citaAEditar = agenda[numCita - 1];
+
+        std::cout << "La cita seleccionada se editará a continuación." << std::endl;
+
+        std::cout << "Ingrese el nuevo nombre del paciente: ";
+        std::cin.ignore();
+        std::getline(std::cin, citaAEditar.nombres);
+
+        std::cout << "Consultorios existentes:" << std::endl;
+        for (size_t i = 0; i < consultoriosDoctores.size(); ++i) {
+            std::cout << i + 1 << ". " << consultoriosDoctores[i][0] << " - Consultorio: " << consultoriosDoctores[i][1] << std::endl;
+        }
+
+        std::cout << "Seleccione el número del consultorio al que desea asignar al paciente: ";
+        int numConsultorio;
+        std::cin >> numConsultorio;
+
+        if (numConsultorio >= 1 && numConsultorio <= consultoriosDoctores.size()) {
+            citaAEditar.consultorio = numConsultorio;
+        } else {
+            std::cout << "Número de consultorio no válido." << std::endl;
+            return;
+        }
+        
+        obtenerFechaValida(citaAEditar.dia, citaAEditar.mes, citaAEditar.año);
+        obtenerHoraValida(citaAEditar.hora, citaAEditar.minuto);
+        obtenerHoraValidaFinal(citaAEditar.horaFin, citaAEditar.minutoFin);
+        
+
+        // Lógica para obtener y validar la nueva fecha y hora de la cita
+
+        while (eventoInterfiere(citaAEditar, agenda)) {
+            std::cout << "La cita coincide con otra en el mismo consultorio." << std::endl;
+            std::cout << "¿Desea cambiar la fecha, el consultorio o cancelar la operación?" << std::endl;
+            std::cout << "1. Cambiar la fecha" << std::endl;
+            std::cout << "2. Cambiar el consultorio" << std::endl;
+            std::cout << "3. Cancelar" << std::endl;
+            std::cout << "Seleccione una opción: ";
+
+            int cambio;
+            std::cin >> cambio;
+
+            switch (cambio) {
+                case 1: // Cambiar la fecha
+                    obtenerFechaValida(citaAEditar.dia, citaAEditar.mes, citaAEditar.año);
+                    // Aquí podrías agregar la lógica necesaria para cambiar la fecha
+                    // y luego volver a verificar si hay interferencias.
+                    break;
+                case 2: // Cambiar el consultorio
+                    std::cout << "Consultorios existentes:" << std::endl;
+                    for (size_t i = 0; i < consultoriosDoctores.size(); ++i) {
+                        std::cout << i + 1 << ". " << consultoriosDoctores[i][0] << " - Consultorio: " << consultoriosDoctores[i][1] << std::endl;
+                    }
+                    std::cout << "Seleccione el número del consultorio al que desea asignar al paciente: ";
+                    int numConsultorio;
+                    std::cin >> numConsultorio;
+                    if (numConsultorio >= 1 && numConsultorio <= consultoriosDoctores.size()) {
+                        citaAEditar.consultorio = numConsultorio;
+                        // Aquí podrías agregar la lógica para cambiar el consultorio
+                        // y luego volver a verificar si hay interferencias.
+                    } else {
+                        std::cout << "Número de consultorio no válido." << std::endl;
+                        return;
+                    }
+                    break;
+                case 3: // Cancelar la operación
+                    std::cout << "Operación cancelada." << std::endl;
+                    return;
+                default:
+                    std::cout << "Opción no válida. Por favor, seleccione un número válido." << std::endl;
+            }
+
+        }
+
+        std::cout << "Evento editado con éxito." << std::endl;
+    } else {
+        std::cout << "Número de cita no válido." << std::endl;
+    }
+}
+
 
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
@@ -347,10 +481,6 @@ int main() {
                 agregarEvento(agenda, consultoriosDoctores);
                 break;
             case 3: // Mostrar eventos
-                if (!hayConsultoriosConDoctores) {
-                    std::cout << "No se pueden editar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
-                    break;
-                }
                 if (!agenda.empty()) {
                     std::cout << "Lista de Eventos:" << std::endl;
                     for (int i = 0; i < agenda.size(); i++) {
@@ -364,38 +494,18 @@ int main() {
                             nombreDoctor = "No asignado";
                         }
             
-                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Doctor: " << nombreDoctor
-                                  << " Consultio: " << agenda[i].consultorio << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año
-                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto << " Hora de finalización de la cita " << agenda[i].horaFin << ":" << agenda[i].minutoFin << std::endl;
+                        std::cout << "Cita " << i + 1 << " Nombre del Paciente: " << agenda[i].nombres << " Doctor: " << consultoriosDoctores[i][0] << " - Consultorio: " << consultoriosDoctores[i][1] 
+                                  << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año
+                                  << " a las " << agenda[i].hora << ":" << agenda[i].minuto << " hasta " << agenda[i].horaFin << ":" << agenda[i].minutoFin << std::endl;
                     }
                 } else {
-                    std::cout << "No hay eventos para mostrar" << std::endl;
+                    std::cout << "No hay citas para mostrar" << std::endl;
                 }
                 break;
-            case 4: // Calcular tiempo para el evento
-                if (!hayConsultoriosConDoctores) {
-                    std::cout << "No se pueden editar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
-                    break;
-                }
-                if (!agenda.empty()) {
-                    std::cout << "Ingrese el número de evento: ";
-                    int numEvento = obtenerEnteroValido();
-
-                    if (numEvento >= 1 && numEvento <= agenda.size()) {
-                        calcularTiempo(agenda[numEvento - 1]);// llama a la funcion donde esta para calcular la hora le damos en valor a parametro  a agenda[numEvento -1]
-                        
-                    } else {
-                        std::cout << "Número de evento no válido" << std::endl;
-                    }
-                } else {
-                    std::cout << "No hay eventos para mostrar" << std::endl;
-                }
+            case 4: // Mostrar eventos dentro del próximo mes, ordenados por cercanía
+                mostrarEventosProximos30Dias(agenda);
                 break;
             case 5: // Eliminar evento
-                if (!hayConsultoriosConDoctores) {
-                    std::cout << "No se pueden editar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
-                    break;
-                }
                 if (!agenda.empty()) {
                     std::cout << "Ingrese el número de evento que desea eliminar: ";
                     int numEvento = obtenerEnteroValido();
@@ -412,31 +522,7 @@ int main() {
                 }
                 break;
             case 6: // Editar evento
-                if (!hayConsultoriosConDoctores) {
-                    std::cout << "No se pueden editar eventos hasta que haya al menos un doctor asignado a un consultorio." << std::endl;
-                    break;
-                }
-                if (!agenda.empty()) {
-                    std::cout << "Ingrese el número de evento que desea editar: ";
-                    int numEvento = obtenerEnteroValido();
-                    if (numEvento >= 1 && numEvento <= agenda.size()) {
-                        evento = agenda[numEvento - 1]; // Obtenemos una referencia al evento que se va a editar
-
-                        std::cout << "Ingrese el nuevo nombre del evento: ";
-                        std::cin.ignore(); // Para consumir la nueva línea en el búfer.
-                        std::getline(std::cin, evento.nombres);
-
-                        std::cout << "Ingrese el nombre del doctor: ";
-                        std::cin.ignore();
-                        std::getline(std::cin, evento.doctores);
-
-                        std::cout << "Evento editado con éxito" << std::endl;
-                    } else {
-                        std::cout << "Número de evento no válido" << std::endl;
-                    }
-                } else {
-                    std::cout << "No hay eventos para editar" << std::endl;
-                }
+                editarEvento(agenda, consultoriosDoctores);
                 break;
 
             case 7: // Salir del programa
