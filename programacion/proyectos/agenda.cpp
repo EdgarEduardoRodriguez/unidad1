@@ -3,23 +3,15 @@
 #include <vector>
 #include <ctime>
 #include <limits>
+#include <chrono>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
 
 // Definición de la estructura para representar un evento
 struct evento {
     std::string nombres;
-    int dia, mes, año, hora, minuto, diaFin, mesFin, añoFin, horaFin, minutoFin;
-    int consultorio;
-    std::string doctores;
-    
-
-
-    bool seSuperponeCon(const evento& otro) const {
-        return (dia == otro.dia && mes == otro.mes && año == otro.año &&
-                consultorio == otro.consultorio &&
-                ((hora >= otro.hora && hora < otro.horaFin) ||
-                 (horaFin > otro.hora && horaFin <= otro.horaFin) ||
-                 (hora <= otro.hora && horaFin >= otro.horaFin)));
-    }
+    int dia, mes, año, hora, minuto;
 };
 
 int obtenerEnteroValido() {//para que el usuario no ingrese letras
@@ -74,14 +66,6 @@ void obtenerHoraValida(int& hora, int& minuto) {//funcion para preguntar la hora
     }
 }
 
-bool eventoSeSuperpone(const evento& nuevo, const std::vector<evento>& agenda) {
-    for (const evento& existente : agenda) {
-        if (nuevo.seSuperponeCon(existente)) {
-            return true;
-        }
-    }
-    return false;
-}
 // Función para calcular la hora de diferencia
 void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro para que no se haga una copia inecesaria de datos
     time_t ahora = time(0);// Obtiene la hora actual del sistema y la guarda en la variable ahora
@@ -142,6 +126,51 @@ void calcularTiempo(const evento& ev){// const event& ev lo toma como parametro 
     }
 }
 
+//funcion para mostrar eventos a 30 dias
+void mostrarEventosProximos30Dias(const std::vector<evento>& agenda) {
+    std::vector<evento> eventosProximos30Dias;
+
+    // Obtener la fecha actual
+    std::chrono::system_clock::time_point today = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(today);
+
+    std::tm localTime = *std::localtime(&currentTime);
+    int todayDay = localTime.tm_mday;
+    int todayMonth = localTime.tm_mon + 1; // tm_mon va de 0 a 11, por lo que sumamos 1 para obtener el mes real
+    int todayYear = localTime.tm_year + 1900; // tm_year cuenta desde 1900, por lo que sumamos 1900
+
+    for (const evento& ev : agenda) {
+        // Verificar si el evento está dentro de los próximos 30 días
+        if (ev.año == todayYear && ev.mes == todayMonth) {
+            if (ev.dia >= todayDay && ev.dia - todayDay <= 30) {
+                eventosProximos30Dias.push_back(ev);
+            }
+        }
+    }
+
+    if (!eventosProximos30Dias.empty()) {
+        // Ordenar los eventos por fecha
+        std::sort(eventosProximos30Dias.begin(), eventosProximos30Dias.end(), [](const evento& a, const evento& b) {
+            // Comparar las fechas
+            if (a.año != b.año) {
+                return a.año < b.año;
+            } else if (a.mes != b.mes) {
+                return a.mes < b.mes;
+            } else {
+                return a.dia < b.dia;
+            }
+        });
+
+        std::cout << "Eventos de los próximos 30 días:" << std::endl;
+        for (const evento& ev : eventosProximos30Dias) {
+            std::cout << "Evento: " << ev.nombres << " Fecha: " << ev.dia << "/" << ev.mes << "/" << ev.año
+                      << " Hora: " << ev.hora << ":" << ev.minuto << std::endl;
+        }
+    } else {
+        std::cout << "No hay eventos en los próximos 30 días." << std::endl;
+    }
+}
+
 int main() {
     std::vector<evento> agenda; // Declaración del vector llamado agenda para guardar los eventos
 
@@ -150,9 +179,10 @@ int main() {
         std::cout << "1. Agregar un evento" << std::endl;
         std::cout << "2. Mostrar todos los eventos" << std::endl;
         std::cout << "3. Mostrar tiempo para el evento" << std::endl;
-        std::cout << "4. Eliminar un evento" << std::endl; // Opción para eliminar eventos
-        std::cout << "5. Editar un evento" << std::endl;   // Opción para editar eventos
-        std::cout << "6. Salir" << std::endl;
+        std::cout << "4. Mostrar los eventos proximos a 30 dias" << std::endl;
+        std::cout << "5. Eliminar un evento" << std::endl; // Opción para eliminar eventos
+        std::cout << "6. Editar un evento" << std::endl;   // Opción para editar eventos
+        std::cout << "7. Salir" << std::endl;
         std::cout << "Seleccione una opción: ";
 
         int opc = obtenerEnteroValido();
@@ -163,47 +193,18 @@ int main() {
             case 1: // Agregar eventos
                 std::cout << "Ingrese el nombre del evento: ";
                 std::getline(std::cin, evento.nombres);
-                std::cout << "Ingrese el nombre del doctor: ";
-                std::getline(std::cin, evento.doctores);
-                std::cout << "Seleccione el consultorio (1-10): ";
-                evento.consultorio = obtenerEnteroValido();
 
                 obtenerFechaValida(evento.dia, evento.mes, evento.año);
                 obtenerHoraValida(evento.hora, evento.minuto);
-                obtenerHoraValida(evento.horaFin, evento.minutoFin);
 
-                if (eventoSeSuperpone(evento, agenda)){
-                    std::cout << "Este evento interfiere con otro evento" << std::endl;
-                    char opcionCambio;
-                    while (true) {
-                        std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
-                        std::cin >> opcionCambio;
-                        if (opcionCambio == '1' || opcionCambio == '2') {
-                            if (opcionCambio == '1') {
-                                obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                                obtenerHoraValida(evento.hora, evento.minuto);
-                                obtenerHoraValida(evento.horaFin, evento.minutoFin);
-                            } else if (opcionCambio == '2') {
-                                std::cout << "Seleccione el nuevo consultorio (1-10): ";
-                                evento.consultorio = obtenerEnteroValido();
-                            }
-                            agenda.push_back(evento);
-                            std::cout << "Evento agregado con éxito." << std::endl;
-                            break;
-                        } else {
-                            std::cout << "Opción no válida. Ingrese 1 o 2." << std::endl;
-                        }
-                    }// fin del while de desea cambiar el evento
-                }else {//fin del if eventoSeSuperpone
                 agenda.push_back(evento); // Lo agrega al vector
-                }
                 break;
             case 2: // Mostrar eventos
                 if (!agenda.empty()) {
                     std::cout << "Lista de Eventos:" << std::endl;
                     for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
-                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << "Doctor: " << agenda[i].doctores << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
-                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto << " Hora de finalizacion de la cita " << agenda[i].horaFin << ":" << agenda[i].minutoFin <<  std::endl;
+                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
+                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto <<std::endl;
                     }
                 } else {
                     std::cout << "No hay eventos para mostrar" << std::endl;
@@ -211,6 +212,11 @@ int main() {
                 break;
             case 3: // Calcular tiempo para el evento
                 if (!agenda.empty()) {
+                    std::cout << "Lista de Eventos:" << std::endl;
+                    for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
+                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
+                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto <<std::endl;
+                    }
                     std::cout << "Ingrese el número de evento: ";
                     int numEvento = obtenerEnteroValido();
 
@@ -224,8 +230,20 @@ int main() {
                     std::cout << "No hay eventos para mostrar" << std::endl;
                 }
                 break;
-            case 4: // Eliminar evento
+            case 4:
                 if (!agenda.empty()) {
+                    mostrarEventosProximos30Dias(agenda);
+                }else {
+                    std::cout<< "No hay eventos prximos a 30 dias" << std::endl; 
+                }
+                break;
+            case 5: // Eliminar evento
+                if (!agenda.empty()) {
+                    std::cout << "Lista de Eventos:" << std::endl;
+                    for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
+                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
+                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto <<std::endl;
+                    }
                     std::cout << "Ingrese el número de evento que desea eliminar: ";
                     int numEvento = obtenerEnteroValido();
 
@@ -240,8 +258,13 @@ int main() {
                     std::cout << "No hay eventos para eliminar" << std::endl;
                 }
                 break;
-            case 5: // Editar evento
+            case 6: // Editar evento
                 if (!agenda.empty()) {
+                    std::cout << "Lista de Eventos:" << std::endl;
+                    for (int i = 0; i < agenda.size(); i++) { // agenda.size muestra el tamaño del vector 
+                        std::cout << "Evento " << i + 1 << ": " << agenda[i].nombres << " Fecha: " << agenda[i].dia << "/" << agenda[i].mes << "/" << agenda[i].año//muestra todos los datos ingresador del evento
+                                  << " Hora: " << agenda[i].hora << ":" << agenda[i].minuto <<std::endl;
+                    }
                     std::cout << "Ingrese el número de evento que desea editar: ";
                     int numEvento = obtenerEnteroValido();
 
@@ -252,48 +275,14 @@ int main() {
                         std::cin.ignore(); // Para consumir la nueva línea en el búfer.
                         std::getline(std::cin, evento.nombres);
 
-                        std::cout << "Ingrese el nombre del doctor: ";
-                        std::cin.ignore();
-                        std::getline(std::cin, evento.doctores);
-
-                        std::cout << "Seleccione el nuevo consultorio (1-10): ";
-                        evento.consultorio = obtenerEnteroValido();
-
                         obtenerFechaValida(evento.dia, evento.mes, evento.año);
                         obtenerHoraValida(evento.hora, evento.minuto);
-                        obtenerHoraValida(evento.horaFin, evento.minutoFin);
-
-                        if (eventoSeSuperpone(evento, agenda)) {
-                            std::cout << "Este evento editado interfiere con otro evento." << std::endl;
-                            char opcionCambio;
-                            while (true) {
-                                std::cout << "¿Desea cambiar la fecha (1) o el consultorio (2)? Ingrese 1 o 2: ";
-                                std::cin >> opcionCambio;
-                                if (opcionCambio == '1' || opcionCambio == '2') {
-                                    if (opcionCambio == '1') {
-                                        obtenerFechaValida(evento.dia, evento.mes, evento.año);
-                                        obtenerHoraValida(evento.hora, evento.minuto);
-                                        obtenerHoraValida(evento.horaFin, evento.minutoFin);
-                                    } else if (opcionCambio == '2') {
-                                        std::cout << "Seleccione el nuevo consultorio (1-10): ";
-                                        evento.consultorio = obtenerEnteroValido();
-
-                                    }
-                                    std::cout << "Evento editado con éxito." << std::endl;
-                                    break;
-                                }
-                            }
-                        } else {
-                            std::cout << "Evento editado con éxito" << std::endl;
-                        }
                     } else {
-                        std::cout << "Número de evento no válido" << std::endl;
+                        std::cout << "No hay eventos para editar" << std::endl;
                     }
-                } else {
-                    std::cout << "No hay eventos para editar" << std::endl;
                 }
                 break;
-                case 6: // Salir del programa
+                case 7: // Salir del programa
                     std::cout << "Saliendo del programa" << std::endl;
                     return 0;
                 default:

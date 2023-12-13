@@ -1,0 +1,1 @@
+edgar,5,Lunes Martes Miércoles Jueves Domingo ,12,0,18,0
